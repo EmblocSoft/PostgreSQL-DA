@@ -550,3 +550,435 @@ SELECT my_int, my_text FROM t2 WHERE my_tsvector @@ to_tsquery('english', 'data 
 
 
 SELECT my_int, my_text FROM t2 WHERE my_tsvector @@ to_tsquery('english', 'data & types') ORDER BY ts_rank_cd(my_tsvector, to_tsquery('english', ' improvements & enhancements')) DESC;
+
+
+P3
+
+CREATE TABLE category (
+category_id SERIAL PRIMARY KEY, category_description TEXT);
+
+CREATE TABLE category_designer (
+category_id INT REFERENCES category(category_id), designer_name TEXT,
+PRIMARY KEY (category_id, designer_name));
+
+
+INSERT INTO category (category_description) VALUES
+    ('Category A'),
+    ('Category B'),
+    ('Category C');
+
+INSERT INTO category_designer (category_id, designer_name) VALUES
+    (1, 'Antonia'),
+    (1, 'Arthur'),
+    (2, 'Eddy');
+
+INSERT INTO category (category_description) VALUES
+    ('Category A'),
+    ('Category B'),
+    ('Category C');
+
+INSERT INTO category-designer (category_id, designer_dame) VALUES
+    (1, 'Antonia'),
+    (1, 'Arthur'),
+    (2, 'Eddy');
+
+SELECT
+    p.product_name,
+    c.category_description,
+    string_agg(cd.DesignerName, ', ') AS Designers
+FROM product p
+JOIN category c ON p.category_id = c.category_id
+LEFT JOIN category_designer cd ON c.category_id = cd.category_id GROUP BY p.product_name, c.category_description;
+
+    
+CREATE DATABASE about_x;
+
+\c about_x
+
+CREATE SCHEMA car;
+CREATE SCHEMA space; CREATE SCHEMA common;
+
+
+P3.1
+
+CREATE TYPE ENUM_TITLE AS ENUM ('Mr.', 'Ms.', 'Mrs.', 'Dr.', 'Prof.');
+
+CREATE TABLE common.shareholder (
+    shareholder_id VARCHAR(10) PRIMARY KEY,
+    title       ENUM_TITLE,
+    first_name  VARCHAR(30) NOT NULL,
+    middle_name VARCHAR(30),
+last_name
+    email
+    phone
+    address_1
+    address_2   VARCHAR(30),
+    address_3   VARCHAR(30),
+    address_4   VARCHAR(30),
+    city        VARCHAR(30) NOT NULL,
+    country     VARCHAR(30) NOT NULL,
+    postal_code VARCHAR(8) NOT NULL);
+    
+CREATE INDEX shareholder_idx_01 ON common.shareholder (shareholder_id);
+
+CREATE INDEX shareholder_idx_02 ON common.shareholder (first_name, last_name, shareholder_id);
+
+INSERT INTO common.shareholder (
+shareholder_id, title, first_name, middle_name, last_name, email, phone, address_1, address_2, address_3, address_4,
+city, country, postal_code)
+VALUES('S000000001','Mr.', 'Elon', 'Reeve', 'Musk','Elon.musk@x.com', '+1-010101010101', 'Unit 1 X Corp Building', NULL, NULL, NULL, 'Los Angeles', 'USA', '912345');
+
+
+
+P3.2
+
+CREATE TABLE common.shareholder_registry (
+company VARCHAR(50) NOT NULL, shareholder_id VARCHAR(10) NOT NULL, shares BIGINT NOT NULL, PRIMARY KEY (shareholder_id, company), FOREIGN KEY (shareholder_id)
+REFERENCES common.shareholder (shareholder_id));
+
+CREATE INDEX share_reg_idx_01 ON common.shareholder_registry (company, shareholder_id);
+
+INSERT INTO common.shareholder_registry (company, shareholder_id, shares) VALUES ('xSpace Inc', 'S000000001', 100000000);
+INSERT INTO common.shareholder_registry ( company, shareholder_id, shares) VALUES ('E Car Inc', 'S000000001', 200000000);
+INSERT INTO common.shareholder_registry ( company, shareholder_id, shares)VALUES ('X Inc', 'S000000001', 300000000);
+
+SELECT s.title, s.first_name, s.last_name, sr.shares FROM common.shareholder s
+JOIN common.shareholder_registry sr
+ON s.shareholder_id = sr.shareholder_id;
+
+
+
+P3.3
+
+CREATE TABLE space.space_travel_schedule (
+trip_id VARCHAR(10) PRIMARY KEY, destination VARCHAR(100) NOT NULL, departure_from VARCHAR(100) NOT NULL, departure_dtm TIMESTAMP(0) NOT NULL, return_dtm TIMESTAMP(0) NOT NULL, price MONEY NOT NULL);
+
+CREATE INDEX space_idx_01 ON space.space_travel_schedule (trip_id);
+
+CREATE INDEX space_idx_02 ON space.space_travel_schedule (destination, trip_id);
+
+INSERT INTO space.space_travel_schedule (
+ trip_id, destination, departure_from,
+departure_dtm, return_dtm, price) VALUES (
+ 'S000000001', 'Moon', 'Los Angeles, USA',
+ '2024-12-31 23:59:59', '2025-01-31 00:00:00', 1000000.00);
+
+
+P3.4
+
+customer_id VARCHAR(20) PRIMARY KEY, title ENUM_TITLE,
+first_name VARCHAR(30) NOT NULL, middle_name VARCHAR(30),
+VARCHAR(30) NOT NULL, VARCHAR(30), VARCHAR(30),
+last_name
+email
+phone
+address_1   VARCHAR(30),
+address_2   VARCHAR(30),
+address_3   VARCHAR(30),
+address_4   VARCHAR(30),
+city        VARCHAR(30),
+country     VARCHAR(30),
+postal_code VARCHAR(8),
+tweeter_account_id VARCHAR(64));
+
+CREATE INDEX customer_idx_01 ON car.customer (customer_id);
+
+
+Result:
+INSERT 0 1
+192
+Practice 3.4: CREATE TABLE “Customer” under “space” schema
+-- Create the Customer table under the car schema CREATE TABLE car.customer (
+customer_id VARCHAR(20) PRIMARY KEY, title ENUM_TITLE,
+first_name VARCHAR(30) NOT NULL, middle_name VARCHAR(30),
+VARCHAR(30) NOT NULL, VARCHAR(30), VARCHAR(30),
+last_name
+email
+phone
+address_1   VARCHAR(30),
+address_2   VARCHAR(30),
+address_3   VARCHAR(30),
+address_4   VARCHAR(30),
+city        VARCHAR(30),
+country     VARCHAR(30),
+postal_code VARCHAR(8),
+tweeter_account_id VARCHAR(64));
+
+CREATE INDEX customer_idx_01 ON car.customer (customer_id);
+-- Insert sample data INSERT INTO car.customer (
+ customer_id, title, first_name, middle_name, last_name,
+ email, phone,
+ address_1, address_2, address_3, address_4,
+ city, country, postal_code,
+tweeter_account_id) VALUES (
+ 'C230000001', 'Mr.', 'Thomas', 'S', 'Bright',
+ 'thomas@thomassbright.org', '+01-123456789',
+ 'Unit 1, First Street', NULL, NULL, NULL,
+ 'Los Angeles', 'USA', '923456',
+ '@thomassbright');
+
+
+P3.5
+
+CREATE TABLE space.space_trip (
+trip_id VARCHAR(10) PRIMARY KEY, customer_id VARCHAR(10) NOT NULL, fee MONEY NOT NULL, amount_paid MONEY NOT NULL,
+FOREIGN KEY (customer_id) REFERENCES car.customer(customer_id) );
+
+CREATE INDEX trip_idx_01 ON space.space_trip (trip_id, customer_id);
+
+CREATE INDEX trip_idx_02 ON space.space_trip (customer_id, trip_id);
+
+INSERT INTO space.space_trip (trip_id, customer_id, fee, amount_paid) VALUES ('S000000001', 'C230000001', '1,000,000.00', '900,000.00');
+
+SELECT st.trip_id, sch.destination, sch.departure_dtm, c.first_name, c.last_name,
+st.amount_paid FROM space.space_trip st
+JOIN car.customer c ON st.customer_id = c.customer_id
+JOIN space.space_travel_schedule sch ON st.trip_id = sch.trip_id;
+
+
+
+P3.6
+
+CREATE TABLE car.category (
+    category_id VARCHAR(20) PRIMARY KEY,
+    description TEXT NOT NULL);
+
+CREATE INDEX category_idx_01 ON car.category (category_id);
+
+INSERT INTO car.category (category_id, description) VALUES ('CT000001', 'Advanced model');
+
+
+
+P3.7
+
+CREATE TABLE car.category_designer (
+category_id VARCHAR(20) REFERENCES car.category (category_id), designer VARCHAR(50) NOT NULL,
+PRIMARY KEY (category_id, designer));
+
+CREATE INDEX category_designer_idx_01 ON car.category_designer (category_id, designer);
+
+INSERT INTO car.category_designer (category_id, designer) VALUES ('CT000001', 'Arthur');
+
+INSERT INTO car.category_designer (category_id, designer) VALUES ('CT000001', 'Antonia');
+
+
+
+P3.8
+
+CREATE TABLE car.product (
+product_id VARCHAR(20) PRIMARY KEY, 
+product_name TEXT NOT NULL,
+sku VARCHAR(20) NOT NULL, 
+origin VARCHAR(20) NOT NULL, 
+color VARCHAR(20) NOT NULL,
+category_id VARCHAR(20) NOT NULL,
+price MONEY NOT NULL,
+FOREIGN KEY (category_id) REFERENCES car.category(category_id));
+
+CREATE INDEX product_idx_01 ON car.product (product_id);
+
+CREATE INDEX product_idx_02 ON car.product (category_id, product_id);
+
+CREATE INDEX product_idx_03 ON car.product (origin, product_id);
+
+INSERT INTO car.product (product_id, product_name, sku, origin, color,category_id, price)
+VALUES ( 'P00000001', 'Model K', 'S0001-20841-2233-331', 'USA', 'Black', 'CT000001', 39999.99);
+
+SELECT category_id, designer FROM car.category_designer; 
+
+SELECT
+    p.product_id, p.product_name, p.price, p.sku, p.category_id,
+    c.description AS category_description,
+    ARRAY_AGG(cd.designer) AS designers
+FROM car.product p
+JOIN car.category c ON p.category_id = c.category_id
+JOIN car.category_designer cd ON p.category_id = cd.category_id
+GROUP BY p.product_id, p.product_name, p.price, p.sku, p.category_id, c.description;
+
+SELECT
+    p.product_id,
+    p.product_name,
+    p.price,
+    p.sku,
+    p.category_id,
+    c.description AS category_description,
+    cd.designer AS designers
+FROM car.product p
+JOIN car.category c ON p.category_id = c.category_id
+JOIN car.category_designer cd ON p.category_id = cd.category_id;
+
+
+
+P3.9
+
+CREATE TABLE car.order_header (
+order_no VARCHAR(20) NOT NULL,
+customer_idVARCHAR(20) REFERENCES car.customer (customer_id),
+order_dtm TIMESTAMP(0),
+delivery_address_1 VARCHAR(30), 
+delivery_address_2 VARCHAR(30), 
+delivery_address_3 VARCHAR(30), 
+delivery_address_4 VARCHAR(30), 
+discount_rate NUMERIC(5,2), 
+order_net_total MONEY,
+PRIMARY KEY (order_no, customer_id)
+);
+
+CREATE INDEX order_header_idx_01 ON car.order_header (order_no, customer_id);
+
+INSERT INTO car.order_header (order_no, customer_id, order_dtm, delivery_address_1,discount_rate, order_net_total) VALUES (
+'OR2023000001', 'C230000001', '2023-08-03 12:00:00','123 Main St', 0.10, 71999.98);
+
+
+P3.10
+
+CREATE TABLE car.order_detail (
+order_no VARCHAR(20) NOT NULL,
+product_id VARCHAR(20) REFERENCES car.product (product_id), qty NUMERIC(11,2),
+unit_price NUMERIC(15,2),
+amount NUMERIC(15,2),
+PRIMARY KEY (order_no, product_id));
+
+CREATE INDEX order_detail_idx_01 ON car.order_detail (order_no, product_id);
+
+INSERT INTO car.order_detail (order_no, product_id, qty, unit_price, amount)
+VALUES ('OR2023000001', 'P00000001', 2, 39999.99, 79999.98);
+
+
+P3.11
+
+ALTER TABLE car.customer
+ADD CONSTRAINT customer_tweeter_account_id_unique UNIQUE (tweeter_account_id);
+
+CREATE TABLE car.tweet (
+tweet_message_id VARCHAR(64) PRIMARY KEY, 
+tweeter_account_id VARCHAR(64) REFERENCES car.customer(tweeter_account_id),
+content TEXT,
+publish_dtm TIMESTAMP(6),
+image BYTEA,
+video VARCHAR(100),
+url VARCHAR(100));
+
+CREATE INDEX tweet_idx_01 ON car.tweet (tweet_message_id, tweeter_account_id);
+
+INSERT INTO car.tweet (
+ tweet_message_id, tweeter_account_id,
+ content,
+ publish_dtm, image, video, url)
+VALUES (
+'T000000001', '@thomassbright',
+ 'Excited to share our latest electric car model!',
+ '2023-08-03 12:00:00.000000', NULL, NULL, NULL);
+
+
+
+P3.12
+
+CREATE TABLE t6 (
+id INT PRIMARY KEY,
+name VARCHAR(50), description VARCHAR(100));
+
+CREATE TABLE t7 (
+id INT PRIMARY KEY,
+t6_id INT,
+details VARCHAR(200),
+FOREIGN KEY (t6_id) REFERENCES t6(id));
+
+INSERT INTO t6 (id, name, description)
+VALUES (1, 'Item A', 'Description for Item A'), (2, 'Item B', 'Description for Item B'), (3, 'Item C', 'Description for Item C'), (4, 'Item D', 'Description for Item D'), (5, 'Item E', 'Description for Item E');
+
+INSERT INTO t7 (id, t6_id, details) VALUES (1, 1, 'Details for Item A'), (2, 2, 'Details for Item B'), (3, 1, 'Details for Item A'), (4, 3, 'Details for Item C'), (5, 2, 'Details for Item B');
+
+
+
+P3.13
+
+ALTER TABLE t6 ADD COLUMN new_column VARCHAR(50);
+
+INSERT INTO t6 (id, name, description, new_column) VALUES (6, 'Item F', 'Description for Item F', '600'), (7, 'Item G', 'Description for Item G', '700'), (8, 'Item H', 'Description for Item H', '800');
+
+ALTER TABLE t6 ALTER COLUMN new_column SET DATA TYPE INT USING new_column::INT;
+
+ALTER TABLE t6 RENAME COLUMN new_column TO new_int;
+
+SELECT * FROM t6;
+
+
+
+P3.14
+
+DROP TABLE t6;
+
+
+
+P3.15
+
+DROP TABLE t6 CASCADE;
+
+
+
+P3.16
+
+CREATE INDEX CONCURRENTLY tweet_idx_02 ON car.tweet (publish_dtm, tweeter_account_id, tweet_message_id);
+
+
+
+P3.17
+
+ALTER INDEX car.tweet_idx_02 RENAME TO tweet_idx_02a;
+
+ALTER INDEX car.tweet_idx_02a SET (fillfactor = 80);
+
+DROP INDEX car.tweet_idx_02a;
+
+CREATE INDEX CONCURRENTLY tweet_idx_02 ON car.tweet (publish_dtm, tweet_message_id, tweeter_account_id);
+
+
+
+P3.18
+
+CREATE VIEW space_trip_details AS
+SELECT st.trip_id, sch.destination, sch.departure_dtm,
+       c.first_name, c.last_name,
+st.amount_paid FROM space.space_trip st
+JOIN car.customer c ON st.customer_id = c.customer_id
+JOIN space.space_travel_schedule sch ON st.trip_id = sch.trip_id;
+
+SELECT * FROM space_trip_details LIMIT 1;
+
+DROP VIEW space_trip_details;
+
+CREATE VIEW space_trip_details AS
+SELECT st.trip_id, sch.destination, sch.departure_dtm, sch.return_dtm,
+       c.first_name, c.last_name,
+st.amount_paid FROM space.space_trip st
+JOIN car.customer c ON st.customer_id = c.customer_id
+JOIN space.space_travel_schedule sch ON st.trip_id = sch.trip_id;
+
+SELECT * FROM space_trip_details LIMIT 1;
+
+DROP VIEW space_trip_details;
+
+
+P3.19
+
+COMMENT ON COLUMN car.order_header.order_no IS 'Unique identifier for each order.';
+
+COMMENT ON COLUMN car.order_header.discount_rate IS 'Percentage discount applied to the whole order.';
+
+COMMENT ON COLUMN car.order_header.order_net_total IS 'Total net amount of the order after discounts, = SUM(order_detail.amount) - SUM(order_detail.amount) * order_header.discount_rate ';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
