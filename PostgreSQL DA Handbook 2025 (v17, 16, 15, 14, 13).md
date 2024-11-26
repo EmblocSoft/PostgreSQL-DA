@@ -1970,13 +1970,572 @@ WHERE amount IS NOT NULL;
 
 
 
+P6.1
+
+INSERT INTO car.customer (
+ customer_id, title, first_name, middle_name, last_name, email, phone,
+address_1,  address_2, address_3, address_4,city, country, postal_code,
+tweeter_account_id) VALUES (
+ 'C230000002', 'Mr.', 'David', 'M', 'Lee', 'david@davidtest.com', '+01-
+98765432', 'Unit 33, Eight Street', NULL, NULL, NULL, 'Los Angeles',
+'USA', '934567', '@davidmlee');
+
+INSERT INTO space.space_trip (trip_id, customer_id, fee, amount_paid) VALUES ('S000000002', 'C230000002', '1,000,000.00', '1,00,000.00');
+
+SELECT trip_id, customer_id, fee FROM space.space_trip;
+
+SELECT order_no, customer_id, order_net_total FROM car.order_header;
+
+SELECT st.trip_id, st.fee AS trip_amount,
+       c.customer_id,
+oh.order_no AS car_order_id, oh.order_net_total AS car_order_amount FROM space.space_trip st
+INNER JOIN car.customer c ON st.customer_id = c.customer_id
+INNER JOIN car.order_header oh ON c.customer_id = oh.customer_id;
+
+SELECT st.trip_id, st.fee AS trip_amount,
+       c.customer_id,
+oh.order_no AS car_order_id, oh.order_net_total AS car_order_amount FROM space.space_trip st
+JOIN car.customer c ON st.customer_id = c.customer_id
+JOIN car.order_header oh ON c.customer_id = oh.customer_id;
+
+
+P6.2
+
+SELECT st.trip_id, st.fee AS trip_amount,
+       c.customer_id,
+oh.order_no AS car_order_id, oh.order_net_total AS car_order_amount FROM space.space_trip st
+FULL OUTER JOIN car.customer c ON st.customer_id = c.customer_id
+FULL OUTER JOIN car.order_header oh ON c.customer_id = oh.customer_id;
+
+SELECT CASE
+ELSE 'No space trip booked' END AS trip_id,
+CASE
+WHEN st.fee IS NOT NULL THEN st.fee::text ELSE '0'
+END AS trip_amount, c.customer_id,
+CASE
+WHEN oh.order_no IS NOT NULL THEN oh.order_no
+ELSE 'No car purchased' END AS car_order_id,
+CASE
+WHEN oh.order_net_total IS NOT NULL THEN oh.order_net_total::text
+ELSE '0'
+END AS car_order_amount
+FROM space.space_trip st
+FULL OUTER JOIN car.customer c ON st.customer_id = c.customer_id
+FULL OUTER JOIN car.order_header oh ON c.customer_id = oh.customer_id;
+
+
+
+P6.3
+
+SELECT CASE
+        ELSE 'No space trip booked'
+    END AS trip_id,
+CASE
+ELSE '0'
+END AS trip_amount, c.customer_id,
+CASE
+        WHEN oh.order_no IS NOT NULL THEN oh.order_no
+ELSE 'No car purchased' END AS car_order_id,
+CASE
+        WHEN oh.order_net_total IS NOT NULL THEN oh.order_net_total::text
+        ELSE '0'
+    END AS car_order_amount
+FROM space.space_trip st
+LEFT OUTER JOIN car.customer c ON st.customer_id = c.customer_id
+LEFT OUTER JOIN car.order_header oh ON c.customer_id = oh.customer_id;
 
 
 
 
+P6.4
+
+SELECT
+    CASE
+        WHEN st.trip_id IS NOT NULL THEN st.trip_id
+        ELSE 'No space trip booked'
+    END AS trip_id,
+    CASE
+        WHEN st.fee IS NOT NULL THEN st.fee::text
+        ELSE '0'
+    END AS trip_amount,
+    c.customer_id,
+    CASE
+        WHEN oh.order_no IS NOT NULL THEN oh.order_no
+        ELSE 'No car purchased'
+    END AS car_order_id,
+    CASE
+        WHEN oh.order_net_total IS NOT NULL THEN oh.order_net_total::text
+        ELSE '0'
+    END AS car_order_amount
+FROM space.space_trip st
+RIGHT OUTER JOIN car.customer c ON st.customer_id = c.customer_id RIGHT OUTER JOIN car.order_header oh ON c.customer_id = oh.customer_id ORDER BY c.customer_id;
+
+WITH
+trip_amounts AS (
+SELECT st.customer_id,
+SUM(COALESCE(st.fee::numeric, 0)) AS total_trip_amount
+FROM space.space_trip st
+GROUP BY st.customer_id ),
+Car_order_amounts AS ( SELECT c.customer_id,
+              SUM(COALESCE(oh.order_net_total::numeric, 0)) AS
+total_car_order_amount
+FROM car.customer c
+LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id GROUP BY c.customer_id
+)
+SELECT CASE
+WHEN ta.total_trip_amount IS NOT NULL THEN ta.total_trip_amount::money
+ELSE '0'::money
+END AS total_trip_amount, c.customer_id,
+CASE
+WHEN coa.total_car_order_amount IS NOT NULL THEN coa.total_car_order_amount::money
+ELSE '0'::money
+END AS total_car_order_amount
+FROM car.customer c
+LEFT JOIN trip_amounts ta ON c.customer_id = ta.customer_id
+LEFT JOIN car_order_amounts coa ON c.customer_id = coa.customer_id ORDER BY c.customer_id;
+
+
+
+WITH
+trip_amounts AS (
+    SELECT    st.customer_id,
+              SUM(COALESCE(st.fee::numeric, 0)) AS total_trip_amount
+    FROM      space.space_trip st
+    GROUP BY  st.customer_id
+),
+Car_order_amounts AS (
+    SELECT    c.customer_id,
+              SUM(COALESCE(oh.order_net_total::numeric, 0)) AS
+total_car_order_amount
+    FROM      car.customer c
+    LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id
+    GROUP BY  c.customer_id
+) SELECT
+    CASE
+        WHEN ta.total_trip_amount IS NOT NULL THEN
+ta.total_trip_amount::money
+        ELSE '0'::money
+    END AS total_trip_amount,
+    ta.customer_id,
+    CASE
+        WHEN coa.total_car_order_amount IS NOT NULL THEN
+coa.total_car_order_amount::money
+        ELSE '0'::money
+    END AS total_car_order_amount
+FROM car.customer c
+RIGHT JOIN trip_amounts ta ON c.customer_id = ta.customer_id
+RIGHT JOIN car_order_amounts coa ON c.customer_id = coa.customer_id ORDER BY c.customer_id;
+
+
+
+P6.5
+
+WITH order_accumulation AS ( SELECT
+)
+   DATE_TRUNC('day', oh.order_dtm) AS order_date,
+   SUM(od.amount) AS accumulated_amount,
+   SUM(od.qty) AS accumulated_qty
+FROM car.order_header oh
+JOIN car.order_detail od ON oh.order_no = od.order_no GROUP BY order_date
+SELECT
+TO_CHAR(order_date, 'YYYY-MM-DD') AS date,
+SUM(accumulated_amount) OVER (ORDER BY order_date)
+AS accumulated_amount,
+SUM(accumulated_qty) OVER (ORDER BY order_date) AS accumulated_qty
+FROM order_accumulation ORDER BY order_date;
+
+SELECT oh.order_dtm, od.amount, od.qty
+FROM car.order_detail od
+JOIN car.order_header oh ON od.order_no = oh.order_no order by oh.order_dtm;
+
+
+P6.6
+
+SELECT COUNT(1) FROM car.category;
+
+SELECT c.category_id, c.description, p.product_id, p.product_name
+FROM car.category c
+CROSS JOIN car.product p;
+
+SELECT c.category_id, c.description, p.product_id, p.product_name FROM car.category c
+FULL OUTER JOIN car.product p ON c.category_id = p.category_id;
+
+INSERT INTO car.category (category_id, description) VALUES ('CT000006', 'Extra Battery');
+
+SELECT c.category_id, c.description, p.product_id, p.product_name FROM car.category c
+FULL OUTER JOIN car.product p ON c.category_id = p.category_id;
+
+SELECT c.category_id, c.description, p.product_id, p.product_name FROM car.category c
+CROSS JOIN car.product p;
+
+
+
+P6.7
+
+SELECT cd1.category_id, cd1.designer
+FROM car.category_designer cd1
+INNER JOIN car.category_designer cd2 ON cd1.category_id = cd2.category_id AND
+           cd1.designer != cd2.designer;
+
+
+
+P7.1
+
+WITH
+trip_amounts AS (
+SELECT st.customer_id,
+SUM(COALESCE(st.fee::numeric, 0)) AS total_trip_amount
+FROM space.space_trip st
+GROUP BY st.customer_id ),
+Car_order_amounts AS ( SELECT c.customer_id,
+              SUM(COALESCE(oh.order_net_total::numeric, 0)) AS
+total_car_order_amount
+FROM car.customer c
+LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id GROUP BY c.customer_id
+)
+SELECT CASE
+WHEN ta.total_trip_amount IS NOT NULL THEN ta.total_trip_amount::money
+ELSE '0'::money
+END AS total_trip_amount, c.customer_id,
+CASE
+WHEN coa.total_car_order_amount IS NOT NULL THEN coa.total_car_order_amount::money
+ELSE '0'::money
+END AS total_car_order_amount
+FROM car.customer c
+LEFT JOIN trip_amounts ta ON c.customer_id = ta.customer_id
+LEFT JOIN car_order_amounts coa ON c.customer_id = coa.customer_id ORDER BY c.customer_id;
+
+
+
+P7.2
+
+EXPLAIN ANALYZE
+WITH
+trip_amounts AS (
+    SELECT    st.customer_id,
+              SUM(COALESCE(st.fee::numeric, 0)) AS total_trip_amount
+    FROM      space.space_trip st
+    GROUP BY  st.customer_id
+),
+Car_order_amounts AS (
+    SELECT    c.customer_id,
+              SUM(COALESCE(oh.order_net_total::numeric, 0)) AS total_car_order_amount
+    FROM      car.customer c
+    LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id
+    GROUP BY  c.customer_id
+)
+SELECT CASE
+        WHEN ta.total_trip_amount IS NOT NULL THEN ta.total_trip_amount::money
+        ELSE '0'::money
+    END AS total_trip_amount,
+    c.customer_id,
+    CASE
+        WHEN coa.total_car_order_amount IS NOT NULL THEN
+coa.total_car_order_amount::money
+        ELSE '0'::money
+    END AS total_car_order_amount
+FROM  car.customer c
+LEFT JOIN trip_amounts ta ON c.customer_id = ta.customer_id
+LEFT JOIN car_order_amounts
 
 
 
 
+P7.3
+
+EXPLAIN ANALYZE
+SELECT COALESCE(SUM(st.fee::money), '0.00'::money) AS total_trip_amount, c.customer_id, COALESCE(SUM(oh.order_net_total::money), '0.00'::money) AS total_car_order_amount
+FROM car.customer c
+LEFT JOIN space.space_trip st ON c.customer_id = st.customer_id
+LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id
+GROUP BY c.customer_id ORDER BY c.customer_id;
 
 
+EXPLAIN ANALYZE WITH
+trip_amounts AS (
+SELECT st.customer_id,
+COALESCE(SUM(st.fee)::money, 0::money) AS total_trip_amount
+FROM space.space_trip st
+GROUP BY st.customer_id ),
+car_order_amounts AS ( SELECT c.customer_id,
+COALESCE(SUM(oh.order_net_total)::money, 0::money)
+AS total_car_order_amount FROM car.customer c
+LEFT JOIN car.order_header oh ON c.customer_id = oh.customer_id
+GROUP BY c.customer_id )
+SELECT ta.total_trip_amount, c.customer_id, coa.total_car_order_amount FROM car.customer c
+LEFT JOIN trip_amounts ta ON c.customer_id = ta.customer_id
+LEFT JOIN car_order_amounts coa ON c.customer_id = coa.customer_id ORDER BY c.customer_id;
+
+
+P7.4
+
+SELECT
+    st.trip_id,
+    st.customer_id,
+    st.fee
+FROM space.space_trip st
+INNER JOIN car.customer c ON st.customer_id = c.customer_id
+INNER JOIN car.order_header oh ON c.customer_id = oh.customer_id
+WHERE
+    oh.order_net_total > '$10000'::money  AND st.fee > '$100'::money;
+
+
+
+P7.5
+
+INSERT INTO car.tweet (
+    tweet_message_id, tweeter_account_id, content, publish_dtm, image,
+video, url)
+SELECT
+md5(random()::text || clock_timestamp()::text)::CHARACTER VARYING(64)
+AS tweet_message_id,
+    '@thomassbright' AS tweeter_account_id,
+    'Sample tweet content' AS content,
+    NOW() AS publish_dtm,
+    null AS image,
+    null AS video,
+    null AS url
+FROM GENERATE_SERIES (1, 1200000);
+
+SET max_parallel_workers = 4;
+
+SET max_parallel_workers_per_gather = 4; 
+
+EXPLAIN
+SELECT tweet_message_id, tweeter_account_id FROM car.tweet
+WHERE publish_dtm >= '2023-01-01'::timestamp ORDER BY publish_dtm;
+
+DROP INDEX car.tweet_idx_02;
+
+SET max_parallel_workers = 4; -- Adjust the number as needed
+SET max_parallel_workers_per_gather = 4; -- Adjust the number as needed
+EXPLAIN ANALYZE
+SELECT tweet_message_id, tweeter_account_id
+FROM car.tweet
+WHERE publish_dtm >= '2023-09-10 15:25:46.329222'::timestamp ORDER BY publish_dtm;
+
+CREATE INDEX CONCURRENTLY tweet_idx_02 ON car.tweet (publish_dtm, tweet_message_id, tweeter_account_id);
+SET max_parallel_workers = 4; -- Adjust the number as needed
+SET max_parallel_workers_per_gather = 4; -- Adjust the number as needed
+
+EXPLAIN ANALYZE
+SELECT tweet_message_id, tweeter_account_id
+FROM car.tweet
+WHERE publish_dtm >= '2023-09-10 15:25:46.329222'::timestamp ORDER BY publish_dtm;
+
+
+
+P7.6
+
+CREATE MATERIALIZED VIEW customer_total_order_amount AS
+SELECT c.customer_id, SUM(oh.order_net_total::numeric) AS total_order_amount
+FROM car.customer c
+JOIN car.order_header oh ON c.customer_id = oh.customer_id GROUP BY c.customer_id;
+
+REFRESH MATERIALIZED VIEW customer_total_order_amount;
+
+SELECT * FROM customer_total_order_amount;
+
+
+
+P7.7
+
+SELECT c.customer_id, c.first_name, c.last_name
+FROM car.customer c
+WHERE c.customer_id IN (
+SELECT oh.customer_id
+FROM car.order_header oh);
+
+
+SELECT c.customer_id, c.first_name, c.last_name
+FROM car.customer c
+WHERE EXISTS (
+SELECT 1
+FROM car.order_header oh
+WHERE oh.customer_id = c.customer_id);
+
+P7.8
+
+REINDEX TABLE car.tweet;
+
+REINDEX INDEX CONCURRENTLY car.tweet_idx_02;
+
+
+
+P7.9
+
+BEGIN;
+SET first_name = 'NewFirstNameA'
+WHERE customer_id = 'C00000001';
+
+BEGIN;
+SET first_name = 'NewFirstNameB'
+WHERE customer_id = 'C00000002';
+
+SELECT blocked.query AS blocked_query, waiting.query AS blocking_query FROM pg_stat_activity AS blocked
+JOIN pg_stat_activity AS waiting ON waiting.pid = blocked.pid
+WHERE blocked.query <> '<IDLE>' AND waiting.query <> '<IDLE>';
+
+ROLLBACK;
+
+SELECT blocked.query AS blocked_query, waiting.query AS blocking_query FROM pg_stat_activity AS blocked
+JOIN pg_stat_activity AS waiting ON waiting.pid = blocked.pid
+WHERE blocked.query <> '<IDLE>' AND waiting.query <> '<IDLE>';
+
+
+
+P8
+
+Please refer to the book
+
+
+P9.1
+
+CREATE EXTENSION IF NOT EXISTS anon CASCADE;
+
+SELECT anon.start_dynamic_masking();
+
+CREATE ROLE test01 LOGIN;
+
+SECURITY LABEL FOR anon ON ROLE test01 IS 'MASKED';
+
+CREATE TABLE info ( name varchar(30), passport_id varchar(15) );
+
+INSERT INTO info VALUES ('Mr. Andrew Big ', 'A123456(1)');
+
+INSERT INTO info VALUES ('Miss Beautiful White', 'B234567(2)');
+
+SELECT name, passport_id FROM info;
+
+SECURITY LABEL FOR anon ON COLUMN info.passport_id IS 'MASKED
+WITH FUNCTION anon.partial(passport_id,5,$$***$$,0)';
+
+SELECT name, passport_id FROM info;
+
+SECURITY LABEL FOR anon ON ROLE test01 IS NULL;
+
+SELECT anon.stop_dynamic_masking();
+
+
+P9.2
+
+SELECT customer_id, city
+FROM car.customer
+WHERE customer_id = '105' OR 1=1;
+
+
+
+P9.3
+
+
+PREPARE safe_query (text) AS SELECT customer_id, city FROM car.customer
+WHERE customer_id = $1;
+
+EXECUTE safe_query('105');
+
+EXECUTE safe_query('105 OR 1=1');
+
+EXECUTE safe_query('1=1');
+
+EXECUTE safe_query('C00000001');
+
+DEALLOCATE safe_query;
+
+
+
+P9.4
+
+CREATE EXTENSION pgcrypto;
+
+ALTER TABLE car.customer DROP COLUMN IF EXISTS social_security_no;
+
+ALTER TABLE car.customer ADD COLUMN social_security_no BYTEA;
+
+UPDATE car.customer
+SET social_security_no = ENCODE(DIGEST('11111111111'::TEXT, 'sha256'::TEXT), 'HEX'::TEXT)::BYTEA
+WHERE customer_id = 'C230000003';
+
+SELECT social_security_no FROM car.customer WHERE customer_id = 'C230000003';
+
+SELECT customer_id, social_security_no FROM car.customer
+WHERE social_security_no =
+ENCODE(DIGEST('11111111111'::TEXT, 'sha256'::TEXT), 'HEX'::TEXT)::BYTEA;
+
+UPDATE car.customer
+SET social_security_no = HMAC('222222222'::BYTEA, 'MY_SECRET_KEY'::BYTEA, 'sha256')
+WHERE customer_id = 'C230000002';
+
+SELECT customer_id, social_security_no FROM car.customer
+WHERE customer_id = 'C230000002';
+
+SELECT customer_id, social_security_no
+FROM car.customer
+WHERE social_security_no = HMAC('222222222'::BYTEA, 'MY_SECRET_KEY'::BYTEA, 'sha256');
+
+
+
+P9.5
+
+CREATE EXTENSION pgcrypto;
+
+UPDATE car.customer
+SET social_security_no = PGP_SYM_ENCRYPT('333333333', 'MY_SECRET_KEY') WHERE customer_id = 'C230000001';
+
+SELECT customer_id, social_security_no FROM car.customer
+WHERE customer_id = 'C230000001';
+
+SELECT customer_id,
+PGP_SYM_DECRYPT(social_security_no, 'MY_SECRET_KEY') as social_security_no
+FROM car.customer
+WHERE customer_id = 'C230000001';
+
+
+
+P9.7
+
+CREATE EXTENSION pgcrypto;
+
+INSERT INTO car.customer (
+ customer_id, title, first_name, middle_name, last_name,
+ email, phone,
+ address_1, address_2, address_3, address_4,
+ city, country, postal_code,
+ tweeter_account_id)
+VALUES (
+'C230000004', 'Mr.', 'Peter', '', 'Pan', 'peter@test.org', '+01-23456789',
+'Unit 1, Sixth Street', NULL, NULL, NULL, 'Los Angeles', 'USA', '9345678', '@petertest');
+
+UPDATE car.customer
+SET social_security_no =
+PGP_PUB_ENCRYPT('444444444', DEARMOR('
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Comment: User-ID: testing test@testing.test
+Comment: Valid from: 9/15/2023 3:50 PM
+Comment: Type: 4,096-bit RSA (secret key available)
+Comment: Usage: Signing, Encryption, Certifying User-IDs
+Comment: Fingerprint: AFCFD435E29EE7FEF4B83CA3A7F45733D2363519 mQINBGUEDLIBEAC
+...... hIReQLuzZVhq6G1tMw53po2AIGVoIGodBDquu0Niu
+-----END PGP PUBLIC KEY BLOCK-----
+'))
+WHERE customer_id = 'C230000004';
+
+
+SELECT customer_id, social_security_no FROM car.customer
+WHERE customer_id = 'C230000004';
+
+SELECT customer_id, CONVERT_FROM(
+PGP_PUB_DECRYPT_BYTEA (social_security_no, DEARMOR('
+-----BEGIN PGP PRIVATE KEY BLOCK-----
+lQcYBGUEDLIBEAC4lrKzwvub5+Ccr2c7B60PWHYsZp7cSAu9WmLRZmkvZefSQG2g
+wdsafGGmIZuIc/L8meSseXhfIIwpc03q2zUZQMnupCtFdWQzgTvL8XkrC3bYUonj
+w1lBzaZieQ9qal1fTAB9MMcqS0xODm3nlchlMF+/ibCPW6SphKNUK3ucfzN8sbr9
+......
+9lOncrHsW7GM9Dryt1brdLbbHdnWQZzjs9qkFloutpWcaDTNDscLKpgLr5F4bTSF
+/GFb+fIkDL9d2is1cB0Pwi4/aJFmoBbkS0gh13S9iqIQeNfGKM8z43vbz2YyIn/W
+5Cf8nCEhF5Au7NlWGrobW0zDnemjYAgZWggah0EOq64=
+=8rIp
+-----END PGP PRIVATE KEY BLOCK-----
+')),'UTF8') AS decrypted_social_security_no FROM car.customer
+WHERE customer_id = 'C230000004';
+
+* * * END * * * 
