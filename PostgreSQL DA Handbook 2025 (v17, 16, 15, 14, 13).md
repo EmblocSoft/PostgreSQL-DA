@@ -2538,4 +2538,4 @@ w1lBzaZieQ9qal1fTAB9MMcqS0xODm3nlchlMF+/ibCPW6SphKNUK3ucfzN8sbr9
 ')),'UTF8') AS decrypted_social_security_no FROM car.customer
 WHERE customer_id = 'C230000004';
 
-* * * END * * * 
+* . * END * . * 
