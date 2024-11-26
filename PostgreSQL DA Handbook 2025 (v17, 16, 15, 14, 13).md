@@ -971,6 +971,327 @@ COMMENT ON COLUMN car.order_header.order_net_total IS 'Total net amount of the o
 
 
 
+P4.1
+
+INSERT INTO car.tweet ( tweet_message_id, tweeter_account_id, content,
+publish_dtm, image, video, url)
+VALUES (
+'T000000002', 'C230000001',
+'Data manipulation in a database refers to the process of adding,
+   altering, retrieving, or deleting data stored within the database.',
+  '2023-08-05 15:00:00.000000', NULL, NULL, NULL);
+
+
+
+P4.2 
+
+INSERT INTO car.tweet ( tweet_message_id, tweeter_account_id, content,
+  publish_dtm,
+  image,
+  video,
+  url)
+VALUES (
+'T000000002',
+'@thomassbright',
+'Data manipulation in a database refers to the process of adding,
+   altering, retrieving, or deleting data stored within the database. ',
+  '2023-08-05 15:00:00.000000',
+  NULL,
+  'https://www.youtube.com/watch?v=T000000002',
+  'https://twitter.com/your_username/status/T000000002' );
+
+SELECT * FROM car.tweet WHERE tweet_message_id ='T000000003';
+
+SELECT
+     c.customer_id,
+     c.first_name,
+     c.last_name,
+     oh.order_no,
+     oh.order_dtm,
+     od.product_id,
+     od.unit_price,
+     p.product_name,
+     p.price AS unit_price,
+     cat.category_id,
+     cat.description AS category_description,
+     od.qty AS total_quantity
+FROM car.customer AS c
+JOIN car.order_header AS oh ON c.customer_id = oh.customer_id JOIN car.order_detail AS od ON oh.order_no = od.order_no
+JOIN car.product AS p ON od.product_id = p.product_id
+JOIN car.category AS cat ON p.category_id = cat.category_id ORDER BY c.customer_id, oh.order_no, od.product_id;
+
+
+
+P4.3
+
+UPDATE car.order_detail
+SET unit_price = 34999.99,
+amount = qty * 34999.99
+WHERE order_no = 'OR2023000001' AND product_id = 'P00000001'
+
+SELECT * FROM car.order_detail
+WHERE order_no = 'OR2023000001' AND product_id = 'P00000001';
+
+SELECT COUNT(1) FROM car.tweet;
+
+DELETE FROM car.tweet
+WHERE tweet_message_id = 'T000000001';
+
+
+
+P4.4
+
+SELECT * FROM car.tweet WHERE tweet_message_id = 'T000000003';
+
+MERGE INTO car.tweet AS target USING (
+SELECT
+'T000000003' AS tweet_message_id,
+'@thomassbright' AS tweeter_account_id,
+'Check out MERGE as it is cool!' AS content,
+TIMESTAMP '2023-08-04 10:30:00.000000' AS publish_dtm, NULL::bytea AS image, 'https://www.youtube.com/watch?v=your_video_id' AS video, 'https://twitter.com/your_username/status/your_tweet_id' AS url
+) AS source
+ON (target.tweet_message_id = source.tweet_message_id) WHEN MATCHED THEN
+UPDATE SET
+        content = source.content,
+        publish_dtm = source.publish_dtm,
+        image = source.image,
+        video = source.video,
+        url = source.url
+WHEN NOT MATCHED THEN
+INSERT (tweet_message_id, tweeter_account_id, content,
+publish_dtm, image, video, url)
+VALUES (source.tweet_message_id, source.tweeter_account_id,
+            source.content,
+            source.publish_dtm, source.image, source.video,
+            source.url);
+            
+SELECT * FROM car.tweet WHERE tweet_message_id = 'T000000003';
+
+MERGE INTO car.tweet AS target USING (
+SELECT
+'T000000003' AS tweet_message_id,
+'@thomassbright' AS tweeter_account_id,
+'Check out MERGE as it is cool!' AS content,
+TIMESTAMP '2023-09-02 11:30:00.000000' AS publish_dtm, NULL::bytea AS image, 'https://www.youtube.com/watch?v=T000000003' AS video, 'https://twitter.com/your_username/status/T000000003' AS url
+) AS source
+ON (target.tweet_message_id = source.tweet_message_id) WHEN MATCHED THEN
+UPDATE SET
+        content = source.content,
+        publish_dtm = source.publish_dtm,
+        image = source.image,
+        video = source.video,
+        url = source.url
+WHEN NOT MATCHED THEN
+INSERT (tweet_message_id, tweeter_account_id, content,
+publish_dtm, image, video, url)
+VALUES (source.tweet_message_id, source.tweeter_account_id,
+            source.content,
+            source.publish_dtm, source.image, source.video,
+            source.url);
+
+
+SELECT * FROM car.tweet WHERE tweet_message_id = 'T000000003';
+
+
+P4.5
+
+CREATE TABLE car.tweet_shared ( 
+tweet_message_id VARCHAR(64) PRIMARY KEY, 
+tweeter_account_id VARCHAR(64) REFERENCES  car.customer(tweeter_account_id),
+content TEXT,
+publish_dtm TIMESTAMP(6),
+image BYTEA,
+video VARCHAR(100),
+url VARCHAR(100));
+
+TRUNCATE car.tweet;
+
+INSERT INTO car.tweet (
+tweet_message_id, tweeter_account_id, content, publish_dtm, image, video, url)
+VALUES (
+'T000000001', '@thomassbright',
+ 'Excited to share our latest electric car model!',
+ '2023-08-03 12:00:00.000000', NULL, NULL, NULL);
+
+INSERT INTO car.tweet (
+tweet_message_id, tweeter_account_id, content, publish_dtm, image, video, url)
+VALUES (
+'T000000002', '@thomassbright',
+ 'Advanced Table Synchronization!',
+ '2023-09-01 10:22:00.000000', NULL,
+ 'https://www.youtube.com/watch?v=T000000002',
+ 'https://twitter.com/your_username/status/T000000002');
+
+INSERT INTO car.tweet (
+tweet_message_id, tweeter_account_id, content, publish_dtm, image, video, url)
+VALUES (
+'T000000003', '@thomassbright',
+'let us check the result!',
+ '2023-09-02 11:22:00.000000', NULL,
+ 'https://www.youtube.com/watch?v=T000000003',
+ 'https://twitter.com/your_username/status/T000000003');
+
+INSERT INTO car.tweet_shared (
+tweet_message_id, tweeter_account_id, content, publish_dtm, image, video, url)
+SELECT
+    source.tweet_message_id,
+    source.tweeter_account_id,
+    source.content,
+    source.publish_dtm,
+    source.image,
+    source.video,
+source.url
+FROM car.tweet source
+ON CONFLICT (tweet_message_id) DO UPDATE
+SET
+tweeter_account_id = excluded.tweeter_account_id, content = excluded.content,
+publish_dtm = excluded.publish_dtm,
+image = excluded.image,
+video = excluded.video,
+url = excluded.url;
+
+DELETE FROM car.tweet_shared target
+WHERE NOT EXISTS (SELECT 1 FROM car.tweet source WHERE target.tweet_message_id = source.tweet_message_id);
+
+SELECT * FROM car.tweet;
+
+SELECT * FROM car.tweet_shared;
+
+DELETE FROM car.tweet WHERE tweet_message_id = 'T000000001';
+
+UPDATE car.tweet SET
+publish_dtm = '2023-09-03 10:22:00.000000',
+content = 'Advanced Table Synchronization – Updated!'
+WHERE tweet_message_id = 'T000000002';
+
+INSERT INTO car.tweet_shared (
+tweet_message_id, tweeter_account_id, content, publish_dtm, image,
+video, url)
+SELECT
+    source.tweet_message_id,
+    source.tweeter_account_id,
+    source.content,
+    source.publish_dtm,
+    source.image,
+    source.video,
+source.url
+FROM car.tweet source
+ON CONFLICT (tweet_message_id) DO UPDATE
+SET
+tweeter_account_id = excluded.tweeter_account_id, content = excluded.content,
+publish_dtm = excluded.publish_dtm,
+image = excluded.image,
+video = excluded.video,
+url = excluded.url;
+
+DELETE FROM car.tweet_shared target
+WHERE NOT EXISTS (
+SELECT 1
+FROM car.tweet source
+WHERE target.tweet_message_id = source.tweet_message_id
+);
+
+SELECT * FROM car.tweet;
+
+SELECT * FROM car.tweet_shared;
+
+
+
+P4.6
+
+BEGIN;
+
+INSERT INTO car.order_header (order_no, customer_id, order_dtm, delivery_address_1, discount_rate, order_net_total)
+VALUES ('O00000002', 'C230000001', '2023-08-15 14:00:00', '456 Elm St', 0.05, 113999.97);
+
+INSERT INTO car.order_detail (
+order_no, product_id, qty, unit_price, amount) 
+VALUES ('O00000002', 'P00000001', 3, 39999.99, 119999.97);
+
+COMMIT;
+
+SELECT * FROM car.order_detail;
+
+SELECT order_no, customer_id, order_dtm, delivery_address_1 FROM car.order_header;
+
+
+
+P4.7
+
+BEGIN; -- Start the transaction
+
+UPDATE car.customer
+SET address_1 = '789 Oak St' WHERE customer_id = 'C230000001';
+
+UPDATE car.order_header
+SET delivery_address_1 = '789 Oak St' WHERE order_no = 'O00000002';
+
+COMMIT;
+
+SELECT customer_id, address_1 FROM car.customer;
+
+SELECT order_no, customer_id, delivery_address_1 FROM car.order_header WHERE order_no = 'O00000002';
+
+
+
+P4.8
+
+TRUNCATE t6;
+
+
+
+P4.9
+
+TRUNCATE t7 CASCADE; 
+TRUNCATE t6 CASCADE;
+
+
+P4.10
+
+CREATE OR REPLACE FUNCTION prevent_null_content()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.content IS NULL THEN
+        RAISE EXCEPTION 'Content cannot be null';
+END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+CREATE TRIGGER check_content_before_insert BEFORE INSERT ON car.tweet FOR EACH ROW EXECUTE FUNCTION prevent_null_content();
+
+CREATE OR REPLACE FUNCTION prevent_null_content_update()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.content IS NULL THEN
+        RAISE EXCEPTION 'Content cannot be set to null';
+END IF;
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_content_before_update BEFORE UPDATE ON car.tweet FOR EACH ROW EXECUTE FUNCTION prevent_null_content_update();
+
+INSERT INTO car.tweet( tweet_message_id, tweeter_account_id, content, publish_dtm, image, video, url)
+VALUES ('T000000001', '@user123', NULL, '2023-08-05 15:00:00', NULL, NULL, 'https://twitter.com/user123/status/123456');
+
+SELECT * FROM car.tweet;
+
+UPDATE car.tweet
+SET content = NULL
+WHERE tweet_message_id = 'T000000002';
+
+
+
+
+
+
+
+
+
+
+
 
 
 
